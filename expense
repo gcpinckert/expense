@@ -1,7 +1,8 @@
 #! /usr/bin/env ruby
 
-require 'pg'
-require 'pry'
+require "pg"
+require "date"
+
 
 HELP = <<~DEFAULT_HELP_MSG
   An expense recording system
@@ -36,7 +37,52 @@ def help
   puts HELP
 end
 
+def add(amount, memo, date = nil)
+  expenses = PG.connect(dbname: "expenses")
+
+  if date
+    expenses.exec("INSERT INTO expenses (amount, memo, date) VALUES (#{amount}, '#{memo}', '#{date}');")
+  else
+    expenses.exec("INSERT INTO expenses (amount, memo) VALUES (#{amount}, '#{memo}');")
+  end
+end
+
+def valid_amount?(amount)
+  amount.to_f.to_s == amount &&
+  amount.to_f >= 0 &&
+  amount.to_f < 100_000
+end
+
+def valid_date?(date)
+  return false unless date.match?(/[0-9]{4}-[0-9]{2}-[0-9]{2}/) 
+  year, month, day = date.split('-')
+  Date.valid_date?(year, month, day)
+end
+
+def error_for_add
+  error = nil
+  error = if ARGV.size < 3
+            "You must provide an amount and a memo" 
+          elsif !valid_amount?(ARGV[1])
+            "Invalid amount"
+          elsif ARGV.size == 4 && !valid_date?(ARGV[3])
+            "Invalid date"
+          elsif ARGV.size > 4
+            "That's too many arguments"
+          end
+  error
+end
+
 case ARGV.first
 when "list" then list
+when "add"
+  error = error_for_add
+  if error
+    puts error
+  elsif ARGV.size == 3
+    add(ARGV[1], ARGV[2])
+  elsif ARGV.size == 4
+    add(ARGV[1], ARGV[2], ARGV[3])
+  end
 else help
 end

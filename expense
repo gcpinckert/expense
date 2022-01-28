@@ -1,16 +1,42 @@
 #! /usr/bin/env ruby
 
 require 'pg'
+require 'pry'
 
-expenses = PG.connect(dbname: "expenses")
+HELP = <<~DEFAULT_HELP_MSG
+  An expense recording system
 
-result = expenses.exec("SELECT * FROM expenses ORDER BY created_on;")
+  Commands:
 
-result.each do |tuple|
-  columns = [ tuple["id"].rjust(3),
-              tuple["created_on"].rjust(10),
-              tuple["amount"].rjust(10),
-              tuple["memo"]
-            ]
-  puts columns.join(" | ")
+  add AMOUNT MEMO [DATE] - record a new expense
+  clear - delete all expenses
+  list - list all expenses
+  delete NUMBER - remove expense with id NUMBER
+  search QUERY - list expenses with a matching memo field
+  DEFAULT_HELP_MSG
+
+# ARGV - an array of arguments as strings that have been passed to the command line program
+
+def list
+  expenses = PG.connect(dbname: "expenses")
+
+  result = expenses.exec("SELECT * FROM expenses ORDER BY created_on;")
+
+  result.each do |tuple|
+    columns = [ tuple["id"].rjust(3),
+                tuple["created_on"].rjust(10),
+                tuple["amount"].rjust(10),
+                tuple["memo"]
+              ]
+    puts columns.join(" | ")
+  end
+end
+
+def help
+  puts HELP
+end
+
+case ARGV.first
+when "list" then list
+else help
 end

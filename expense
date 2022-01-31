@@ -93,8 +93,8 @@ class ExpenseData
 
   def list
     result = @expenses.exec("SELECT * FROM expenses ORDER BY created_on;")
-
-    display_result(result)
+    display_count(result)
+    display_result(result) unless empty?(result)
   end
 
   def help
@@ -119,13 +119,14 @@ class ExpenseData
   def search(search_terms)
     sql = "SELECT * FROM expenses WHERE memo ILIKE $1 ORDER BY created_on;"
     result = @expenses.exec_params(sql, ["%#{search_terms}%"])
-    display_result(result)
+    display_count(result)
+    display_result(result) unless empty?(result)
   end
 
   def delete(id_number)
     sql = "SELECT * FROM expenses WHERE id = $1;"
     result = @expenses.exec_params(sql, [id_number])
-    if result.ntuples == 0
+    if empty?(result)
       puts "There is no expense with the id '#{id_number}'."
     else
       sql = "DELETE FROM expenses WHERE id = $1;"
@@ -142,23 +143,37 @@ class ExpenseData
 
   private
 
+  def empty?(result)
+    result.ntuples > 0
+  end
+
+  def display_count(result)
+    count = result.ntuples
+    if count > 0
+      puts "There are #{count} expenses."
+    else
+      puts "There are no expenses."
+    end
+  end
+
   def display_result(result)
-        result.each do |tuple|
+    width = 0
+    total = 0
+    result.each do |tuple|
       columns = [ tuple["id"].rjust(3),
                   tuple["created_on"].rjust(10),
                   tuple["amount"].rjust(10),
                   tuple["memo"]
                 ]
-      puts columns.join(" | ")
+      total += tuple["amount"].to_f
+      row = columns.join(" | ")
+      width = row.size if row.size > width
+      puts row
     end
+
+    puts "-" * width
+    puts "#{'Total'.ljust(19)}#{total.to_s.rjust(10)}"
   end
 end
 
 CLI.new(ARGV).run
-
-=begin
-- Add a new branch to the case statement in `CLI#run` that deals with the `clear` command. No arguments are needed here.
-- This calls a method (in the CLI class or the ExpenseData class?) that displays the "are you sure?" message to the screen. This returns `true` if the user types `y` or `false` if the user types `n`.
-- If it returns false, don't do anything.
-- If it returns true, call the new `ExpenseData#delete_all_expenses` method, which will delete all the expenses and output the message, "all expenses have been deleted".
-=end

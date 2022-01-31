@@ -28,6 +28,12 @@ class CLI
       else
         application.search(arguments.first)
       end
+    when "delete"
+      if arguments.empty? || !valid_id?
+        puts "Please provide an id number for the expense to delete"
+      else
+        application.delete(arguments.first)
+      end
     else application.help
     end
   end
@@ -35,6 +41,11 @@ class CLI
   private
 
   attr_reader :command, :arguments, :application
+
+  def valid_id?
+    arguments[0].to_i.to_s == arguments[0] &&
+    arguments[0].to_i > 0
+  end
 
   def valid_amount?
     amount = arguments[0]
@@ -100,6 +111,19 @@ class ExpenseData
     sql = "SELECT * FROM expenses WHERE memo ILIKE $1 ORDER BY created_on;"
     result = @expenses.exec_params(sql, ["%#{search_terms}%"])
     display_result(result)
+  end
+
+  def delete(id_number)
+    sql = "SELECT * FROM expenses WHERE id = $1;"
+    result = @expenses.exec_params(sql, [id_number])
+    if result.ntuples == 0
+      puts "There is no expense with the id '#{id_number}'."
+    else
+      sql = "DELETE FROM expenses WHERE id = $1;"
+      @expenses.exec_params(sql, [id_number])
+      puts "The following expense had been deleted:"
+      display_result(result)
+    end
   end
 
   private

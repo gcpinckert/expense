@@ -41,9 +41,9 @@ def add(amount, memo, date = nil)
   expenses = PG.connect(dbname: "expenses")
 
   if date
-    expenses.exec("INSERT INTO expenses (amount, memo, date) VALUES (#{amount}, '#{memo}', '#{date}');")
+    expenses.exec_params("INSERT INTO expenses (amount, memo, date) VALUES ($1, $2, $3);", [amount, memo, date])
   else
-    expenses.exec("INSERT INTO expenses (amount, memo) VALUES (#{amount}, '#{memo}');")
+    expenses.exec_params("INSERT INTO expenses (amount, memo) VALUES ($1, $2);", [amount, memo])
   end
 end
 

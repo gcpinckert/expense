@@ -2,6 +2,7 @@
 
 require "pg"
 require "date"
+require "io/console"
 
 class CLI
   def initialize(arguments)
@@ -34,6 +35,8 @@ class CLI
       else
         application.delete(arguments.first)
       end
+    when "clear"
+      application.delete_all_expenses if confirmed?
     else application.help
     end
   end
@@ -73,6 +76,12 @@ class CLI
               "That's too many arguments"
             end
     error
+  end
+
+  def confirmed?
+    puts "This will remove all expenses. Are you sure? (y/n)"
+    answer = $stdin.getch
+    answer == 'y'
   end
 end
 
@@ -126,6 +135,11 @@ class ExpenseData
     end
   end
 
+  def delete_all_expenses
+    @expenses.exec("DELETE FROM expenses;")
+    puts "All expenses have been deleted."
+  end
+
   private
 
   def display_result(result)
@@ -141,3 +155,10 @@ class ExpenseData
 end
 
 CLI.new(ARGV).run
+
+=begin
+- Add a new branch to the case statement in `CLI#run` that deals with the `clear` command. No arguments are needed here.
+- This calls a method (in the CLI class or the ExpenseData class?) that displays the "are you sure?" message to the screen. This returns `true` if the user types `y` or `false` if the user types `n`.
+- If it returns false, don't do anything.
+- If it returns true, call the new `ExpenseData#delete_all_expenses` method, which will delete all the expenses and output the message, "all expenses have been deleted".
+=end

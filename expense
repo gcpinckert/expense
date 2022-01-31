@@ -22,6 +22,12 @@ class CLI
       elsif arguments.size == 4
         application.add(arguments[0], arguments[1], arguments[2])
       end
+    when "search"
+      if arguments.empty?
+        puts "Please provide a search term"
+      else
+        application.search(arguments.first)
+      end
     else application.help
     end
   end
@@ -68,14 +74,7 @@ class ExpenseData
   def list
     result = @expenses.exec("SELECT * FROM expenses ORDER BY created_on;")
 
-    result.each do |tuple|
-      columns = [ tuple["id"].rjust(3),
-                  tuple["created_on"].rjust(10),
-                  tuple["amount"].rjust(10),
-                  tuple["memo"]
-                ]
-      puts columns.join(" | ")
-    end
+    display_result(result)
   end
 
   def help
@@ -95,6 +94,25 @@ class ExpenseData
   def add(amount, memo, date = Date.today)
     sql = "INSERT INTO expenses (amount, memo, created_on) VALUES ($1, $2, $3);"
     @expenses.exec_params(sql, [amount, memo, date])
+  end
+
+  def search(search_terms)
+    sql = "SELECT * FROM expenses WHERE memo ILIKE $1 ORDER BY created_on;"
+    result = @expenses.exec_params(sql, ["%#{search_terms}%"])
+    display_result(result)
+  end
+
+  private
+
+  def display_result(result)
+        result.each do |tuple|
+      columns = [ tuple["id"].rjust(3),
+                  tuple["created_on"].rjust(10),
+                  tuple["amount"].rjust(10),
+                  tuple["memo"]
+                ]
+      puts columns.join(" | ")
+    end
   end
 end
 

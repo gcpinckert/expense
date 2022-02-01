@@ -89,6 +89,7 @@ class ExpenseData
 
   def initialize
     @expenses = PG.connect(dbname: "expenses")
+    setup_schema
   end
 
   def list
@@ -143,8 +144,20 @@ class ExpenseData
 
   private
 
+  def setup_schema
+    return if table_exists?
+    schema = File.read("./schema.sql")
+    @expenses.exec(schema)
+  end
+
+  def table_exists?
+    sql = "SELECT COUNT(*) FROM information_schema.tables" \
+          " WHERE table_schema = 'public' AND table_name = 'expenses';"
+    @expenses.exec(sql).values.flatten.join == '1'
+  end
+
   def empty?(result)
-    result.ntuples > 0
+    result.ntuples <= 0
   end
 
   def display_count(result)
